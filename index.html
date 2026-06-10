@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +14,6 @@
   input,select,button{font-family:'Archivo',sans-serif}
   input:focus,select:focus,button:focus-visible{outline:3px solid #FFD307;outline-offset:1px}
 
-  /* HEADER */
   header{background:#181B1F;color:#fff;padding:20px 20px 16px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px}
   .brand{display:flex;gap:12px;align-items:center}
   .brandmark{background:#FFD307;color:#181B1F;font-weight:900;font-stretch:75%;font-size:20px;padding:8px 10px;border-radius:4px;letter-spacing:.05em}
@@ -25,19 +23,15 @@
   .tally-num{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:30px;display:block;line-height:1}
   .tally-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;opacity:.6}
 
-  /* TABS */
   nav{display:flex;background:#181B1F;padding:0 12px;gap:4px}
   nav button{flex:1;background:transparent;color:rgba(255,255,255,.55);border:none;border-bottom:3px solid transparent;padding:12px 4px;font-size:14px;font-weight:700;cursor:pointer;transition:color .15s}
   nav button.active{color:#fff;border-bottom:3px solid #FFD307}
 
-  /* TOAST */
   #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#181B1F;color:#FFD307;padding:10px 18px;border-radius:6px;font-weight:700;font-size:14px;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.25);display:none}
 
-  /* CARD */
   .card{background:#fff;margin:16px auto;max-width:680px;border-radius:10px;padding:20px 18px;box-shadow:0 1px 4px rgba(20,22,26,.08)}
   .card-title{font-weight:900;font-stretch:72%;font-size:20px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
 
-  /* FORM */
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .field{display:block;margin-bottom:14px;min-width:0}
   .field label,.field-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#5B6068;margin-bottom:5px}
@@ -49,7 +43,6 @@
   .log-btn{width:100%;margin-top:6px;padding:15px;background:#FFD307;color:#181B1F;border:2px solid #181B1F;border-radius:8px;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
   .log-btn:disabled{opacity:.5;cursor:not-allowed}
 
-  /* BOARD */
   .empty{color:#777;padding:18px 4px;font-size:15px}
   .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #EDEEEA}
   .row-plate{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;background:#FFD307;border:1.5px solid #181B1F;border-radius:4px;padding:5px 8px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
@@ -58,9 +51,7 @@
   .row-source{font-weight:700;font-size:14.5px}
   .row-value{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px}
   .row-sub{font-size:12.5px;color:#6B7077;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .del-btn{border:none;background:transparent;color:#A6ABA3;font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
 
-  /* SUMMARY */
   .note{font-size:14px;color:#4A4F56;margin-bottom:16px}
   .ch-row{margin-bottom:16px}
   .ch-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px}
@@ -75,6 +66,9 @@
   .spend-input{width:110px;padding:6px 9px;border:1.5px solid #C9CCC6;border-radius:5px;font-size:14px;font-family:'IBM Plex Mono',monospace}
   .totals-line{font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;padding:12px 0 4px;border-top:2px solid #181B1F;margin-top:8px}
 
+  .refresh-btn{border:1.5px solid #C9CCC6;background:#FAFAF8;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px}
+  .loading{text-align:center;padding:24px;color:#777;font-size:14px}
+
   footer{text-align:center;font-size:12px;color:#7A7F76;margin-top:18px;padding:0 20px}
 
   @media(max-width:480px){.form-grid{grid-template-columns:1fr}}
@@ -87,11 +81,11 @@
     <div class="brandmark">CA</div>
     <div>
       <div class="brandname">LEAD BOARD</div>
-      <div class="brandsub">Car Agent · where every sale came from</div>
+      <div class="brandsub">Car Agent · shared team board</div>
     </div>
   </div>
   <div class="tally">
-    <span class="tally-num" id="tally">0</span>
+    <span class="tally-num" id="tally">–</span>
     <span class="tally-label">sales logged</span>
   </div>
 </header>
@@ -104,205 +98,173 @@
 
 <div id="toast"></div>
 
-<!-- LOG TAB -->
 <div id="tab-log" class="card">
   <div class="card-title">New sale</div>
   <div class="form-grid">
-    <div class="field">
-      <label>Date</label>
-      <input type="date" id="f-date">
-    </div>
-    <div class="field">
-      <label>Salesperson</label>
-      <input type="text" id="f-rep" placeholder="e.g. Dave">
-    </div>
+    <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+    <div class="field"><label>Salesperson</label><input type="text" id="f-rep" placeholder="e.g. Dave"></div>
   </div>
-  <div class="field">
-    <label>Vehicle — reg or description</label>
-    <input type="text" class="plate-input" id="f-vehicle" placeholder="AB12 CDE">
-  </div>
+  <div class="field"><label>Vehicle — reg or description</label><input type="text" class="plate-input" id="f-vehicle" placeholder="AB12 CDE"></div>
   <div class="form-grid">
-    <div class="field">
-      <label>Sale value (£)</label>
-      <input type="number" inputmode="numeric" id="f-value" placeholder="13500">
-    </div>
-    <div class="field">
-      <label>Notes (optional)</label>
-      <input type="text" id="f-notes" placeholder="Enquired via AT message">
-    </div>
+    <div class="field"><label>Sale value (£)</label><input type="number" inputmode="numeric" id="f-value" placeholder="13500"></div>
+    <div class="field"><label>Notes (optional)</label><input type="text" id="f-notes" placeholder="Enquired via AT message"></div>
   </div>
   <div class="field">
     <div class="field-label">"How did you first hear about us?"</div>
     <div class="source-grid" id="source-grid"></div>
   </div>
-  <button class="log-btn" onclick="addSale()">Log sale</button>
+  <button class="log-btn" id="log-btn" onclick="addSale()">Log sale</button>
 </div>
 
-<!-- BOARD TAB -->
 <div id="tab-board" class="card" style="display:none">
   <div class="card-title">Recent sales</div>
-  <div id="board-list"></div>
+  <button class="refresh-btn" onclick="loadSales(true)">↻ Refresh</button>
+  <div id="board-list"><div class="loading">Loading…</div></div>
 </div>
 
-<!-- SUMMARY TAB -->
 <div id="tab-summary" class="card" style="display:none">
   <div class="card-title">Cost per sale by channel</div>
-  <p class="note">Enter monthly spend per channel. Channels above <strong>£227/sale</strong> (industry benchmark) are highlighted.</p>
+  <p class="note">Enter monthly spend per channel. Channels above <strong>£227/sale</strong> (industry benchmark) are highlighted. Spend figures save on this device.</p>
   <div id="summary-list"></div>
   <div class="totals-line" id="totals-line"></div>
   <button class="log-btn" onclick="saveSpend()">Save spend figures</button>
 </div>
 
-<footer>Shared board — all team members see and edit the same log.</footer>
+<footer>Shared board — everyone with the link logs to the same list, backed by Google Sheets.</footer>
 
 <script>
+// ▼▼▼ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BETWEEN THE QUOTES ▼▼▼
+const API_URL = "https://script.google.com/macros/s/AKfycbxtgcrFqOmNUMgLzwQiZAwWBFsjH5QGdfMEKZMoaumPjq9bQ-C88kvlcQ0FKGzRlOWQ/exec";
+// ▲▲▲ It looks like: https://script.google.com/macros/s/AKfycb.../exec ▲▲▲
+
 const SOURCES = ["Auto Trader","Other portal","Website direct","Walk-in","Repeat customer","Referral","Email campaign","SMS campaign","Social media","Phone-in","Other"];
 const DEFAULT_SPEND = {"Auto Trader":4000,"Other portal":800,"Website direct":300,"Social media":400,"Email campaign":50,"SMS campaign":50};
-const LS_KEY = "ca-lead-tracker-v1";
 
-let state = { entries: [], spend: { ...DEFAULT_SPEND } };
+let entries = [];
+let spend = JSON.parse(localStorage.getItem("ca-spend") || "null") || { ...DEFAULT_SPEND };
 let selectedSource = "";
 
-function load() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) state = { ...state, ...JSON.parse(raw) };
-  } catch(e) {}
-}
-function save() {
-  localStorage.setItem(LS_KEY, JSON.stringify(state));
-}
-
-function gbp(n) { return "£" + Math.round(n).toLocaleString("en-GB"); }
-
-function toast(msg) {
+function gbp(n){ return "£" + Math.round(n).toLocaleString("en-GB"); }
+function toast(msg){
   const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.style.display = "block";
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.style.display = "none", 2200);
+  el.textContent = msg; el.style.display = "block";
+  clearTimeout(el._t); el._t = setTimeout(()=>el.style.display="none", 2500);
 }
-
-function showTab(name, btn) {
-  ["log","board","summary"].forEach(t => {
-    document.getElementById("tab-"+t).style.display = t === name ? "block" : "none";
-  });
-  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+function showTab(name, btn){
+  ["log","board","summary"].forEach(t => document.getElementById("tab-"+t).style.display = t===name?"block":"none");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-  if (name === "board") renderBoard();
-  if (name === "summary") renderSummary();
+  if(name==="board") loadSales();
+  if(name==="summary") renderSummary();
 }
 
-// Set today's date
 document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
 
-// Build source buttons
 const sg = document.getElementById("source-grid");
 SOURCES.forEach(s => {
   const b = document.createElement("button");
-  b.className = "source-btn";
-  b.textContent = s;
+  b.className = "source-btn"; b.textContent = s;
   b.onclick = () => {
     selectedSource = s;
-    document.querySelectorAll(".source-btn").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll(".source-btn").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
   };
   sg.appendChild(b);
 });
 
-function updateTally() {
-  document.getElementById("tally").textContent = state.entries.length;
+async function loadSales(showToast){
+  try{
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    entries = data.entries || [];
+    document.getElementById("tally").textContent = entries.length;
+    renderBoard();
+    if(showToast) toast("Refreshed ✓");
+  }catch(e){
+    document.getElementById("board-list").innerHTML = '<div class="empty">Couldn\'t load — check connection and the API_URL in the code.</div>';
+  }
 }
 
-function addSale() {
+async function addSale(){
   const vehicle = document.getElementById("f-vehicle").value.trim().toUpperCase();
-  const source = selectedSource;
-  if (!vehicle || !source) { toast("Vehicle and lead source are required"); return; }
+  if(!vehicle || !selectedSource){ toast("Vehicle and lead source are required"); return; }
+  const btn = document.getElementById("log-btn");
+  btn.disabled = true; btn.textContent = "Saving…";
   const entry = {
-    id: Date.now(),
     date: document.getElementById("f-date").value,
     rep: document.getElementById("f-rep").value.trim(),
     vehicle,
     value: parseFloat(document.getElementById("f-value").value) || 0,
-    source,
+    source: selectedSource,
     notes: document.getElementById("f-notes").value.trim()
   };
-  state.entries.unshift(entry);
-  save();
-  updateTally();
-  // reset
-  document.getElementById("f-vehicle").value = "";
-  document.getElementById("f-value").value = "";
-  document.getElementById("f-notes").value = "";
-  selectedSource = "";
-  document.querySelectorAll(".source-btn").forEach(x => x.classList.remove("active"));
-  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
-  toast("Sale logged ✓");
+  try{
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(entry)
+    });
+    document.getElementById("f-vehicle").value = "";
+    document.getElementById("f-value").value = "";
+    document.getElementById("f-notes").value = "";
+    selectedSource = "";
+    document.querySelectorAll(".source-btn").forEach(x=>x.classList.remove("active"));
+    toast("Sale logged ✓ — shared with the team");
+    loadSales();
+  }catch(e){
+    toast("Couldn't save — check connection");
+  }
+  btn.disabled = false; btn.textContent = "Log sale";
 }
 
-function deleteSale(id) {
-  state.entries = state.entries.filter(e => e.id !== id);
-  save();
-  updateTally();
-  renderBoard();
-}
-
-function renderBoard() {
+function renderBoard(){
   const el = document.getElementById("board-list");
-  if (!state.entries.length) { el.innerHTML = '<div class="empty">No sales logged yet.</div>'; return; }
-  el.innerHTML = state.entries.slice(0,60).map(e => `
+  if(!entries.length){ el.innerHTML = '<div class="empty">No sales logged yet.</div>'; return; }
+  el.innerHTML = entries.slice(0,100).map(e => `
     <div class="row">
-      <div class="row-plate">${e.vehicle}</div>
+      <div class="row-plate">${e.vehicle||""}</div>
       <div class="row-main">
         <div class="row-top">
-          <span class="row-source">${e.source}</span>
+          <span class="row-source">${e.source||""}</span>
           <span class="row-value">${e.value ? gbp(e.value) : ""}</span>
         </div>
-        <div class="row-sub">${e.date}${e.rep ? " · "+e.rep : ""}${e.notes ? " · "+e.notes : ""}</div>
+        <div class="row-sub">${e.date||""}${e.rep?" · "+e.rep:""}${e.notes?" · "+e.notes:""}</div>
       </div>
-      <button class="del-btn" onclick="deleteSale(${e.id})">×</button>
     </div>`).join("");
 }
 
-function renderSummary() {
-  const total = state.entries.length;
+function renderSummary(){
+  const total = entries.length;
   const el = document.getElementById("summary-list");
   el.innerHTML = SOURCES.map(s => {
-    const count = state.entries.filter(e => e.source === s).length;
-    const sp = state.spend[s] || 0;
+    const count = entries.filter(e => e.source === s).length;
+    const sp = spend[s] || 0;
     const cps = count > 0 ? sp / count : null;
-    const pct = total > 0 ? (count / total) * 100 : 0;
-    const cpsHtml = cps !== null ? `<span class="${cps > 227 ? "bad" : "good"}">${gbp(cps)}/sale</span>` : "";
+    const pct = total > 0 ? (count/total)*100 : 0;
+    const cpsHtml = cps !== null ? `<span class="${cps>227?"bad":"good"}">${gbp(cps)}/sale</span>` : "";
     return `<div class="ch-row">
-      <div class="ch-head">
-        <span class="ch-name">${s}</span>
-        <span class="ch-stats">${count} sale${count!==1?"s":""}${cpsHtml}</span>
-      </div>
+      <div class="ch-head"><span class="ch-name">${s}</span><span class="ch-stats">${count} sale${count!==1?"s":""}${cpsHtml}</span></div>
       <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-      <div class="spend-line">
-        <span class="spend-label">Monthly spend £</span>
-        <input class="spend-input" type="number" inputmode="numeric" data-src="${s}" value="${sp || ""}">
-      </div>
+      <div class="spend-line"><span class="spend-label">Monthly spend £</span>
+      <input class="spend-input" type="number" inputmode="numeric" data-src="${s}" value="${sp||""}"></div>
     </div>`;
   }).join("");
-
-  const totalSpend = Object.values(state.spend).reduce((a,b) => a+(b||0), 0);
-  const blended = total > 0 ? totalSpend / total : null;
+  const totalSpend = Object.values(spend).reduce((a,b)=>a+(b||0),0);
+  const blended = total>0 ? totalSpend/total : null;
   document.getElementById("totals-line").textContent =
-    `Total spend ${gbp(totalSpend)}/month` + (blended !== null ? ` · blended ${gbp(blended)}/sale` : "");
+    `Total spend ${gbp(totalSpend)}/month` + (blended!==null?` · blended ${gbp(blended)}/sale`:"");
 }
 
-function saveSpend() {
+function saveSpend(){
   document.querySelectorAll(".spend-input").forEach(inp => {
-    state.spend[inp.dataset.src] = parseFloat(inp.value) || 0;
+    spend[inp.dataset.src] = parseFloat(inp.value)||0;
   });
-  save();
+  localStorage.setItem("ca-spend", JSON.stringify(spend));
   renderSummary();
   toast("Spend saved ✓");
 }
 
-load();
-updateTally();
+loadSales();
 </script>
 </body>
 </html>
