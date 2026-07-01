@@ -72,11 +72,15 @@
   /* HISTORY */
   .month-group{margin-bottom:22px}
   .month-title{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;background:#181B1F;color:#FFD307;display:inline-block;padding:4px 10px;border-radius:4px;margin-bottom:10px}
-  .hist-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #EDEEEA;font-size:14px}
+  .hist-row{padding:9px 0;border-bottom:1px solid #EDEEEA;font-size:14px}
   .hist-row:last-child{border-bottom:none}
+  .hist-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
   .hist-source{font-weight:700}
   .hist-stats{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4A4F56;text-align:right}
-  .month-total{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;text-align:right;margin-top:8px;padding-top:8px;border-top:1.5px solid #181B1F}
+  .hist-cpl{font-size:12.5px;margin-top:3px;text-align:right;font-family:'IBM Plex Mono',monospace}
+  .hist-cpl .good{color:#1E7D45;font-weight:700}
+  .hist-cpl .bad{color:#C0392B;font-weight:700}
+  .month-total{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;text-align:right;margin-top:8px;padding-top:8px;border-top:1.5px solid #181B1F;line-height:1.6}
 
   footer{text-align:center;font-size:12px;color:#7A7F76;margin-top:18px;padding:0 20px}
 
@@ -134,7 +138,7 @@
 
 <div id="tab-summary" class="card" style="display:none">
   <div class="card-title">Cost per sale by channel</div>
-  <p class="note">Enter monthly spend per channel. Channels above <strong>£227/sale</strong> (industry benchmark) are highlighted. Spend figures save on this device.</p>
+  <p class="note">Enter monthly spend per channel. Channels above <strong>£227/sale</strong> (industry benchmark) are highlighted. Spend syncs with the team and carries into next month's History.</p>
   <div id="summary-list"></div>
   <div class="totals-line" id="totals-line"></div>
   <button class="log-btn" onclick="saveSpend()">Save spend figures</button>
@@ -142,7 +146,7 @@
 
 <div id="tab-history" class="card" style="display:none">
   <div class="card-title">Monthly history</div>
-  <p class="note">Archived automatically on the 1st of each month.</p>
+  <p class="note">Archived automatically on the 1st of each month, including total turnover and cost per lead by channel.</p>
   <button class="refresh-btn" onclick="loadSales(true)">↻ Refresh</button>
   <div id="history-list"><div class="loading">Loading…</div></div>
 </div>
@@ -159,7 +163,7 @@ const DEFAULT_SPEND = {"Auto Trader":4000,"Google Ads":0,"Other portal":800,"Web
 
 let entries = [];
 let history = [];
-let spend = JSON.parse(localStorage.getItem("ca-spend") || "null") || { ...DEFAULT_SPEND };
+let spend = { ...DEFAULT_SPEND };
 let selectedSource = "";
 
 function gbp(n){ return "£" + Math.round(n).toLocaleString("en-GB"); }
@@ -197,6 +201,9 @@ async function loadSales(showToast){
     const data = await res.json();
     entries = data.entries || [];
     history = data.history || [];
+    if (data.spend && Object.keys(data.spend).length > 0) {
+      spend = { ...DEFAULT_SPEND, ...data.spend };
+    }
     document.getElementById("tally").textContent = entries.length;
     renderBoard();
     if(showToast) toast("Refreshed ✓");
@@ -292,28 +299,52 @@ function renderHistory(){
     const rows = byMonth[m];
     const totalSales = rows.reduce((a,r)=>a+(parseInt(r.sales)||0),0);
     const totalValue = rows.reduce((a,r)=>a+(parseFloat(r.totalValue)||0),0);
+    const totalSpend = rows.reduce((a,r)=>a+(parseFloat(r.spend)||0),0);
+    const blendedCpl = totalSales>0 ? totalSpend/totalSales : null;
+
     const rowsHtml = rows
       .sort((a,b)=>(parseInt(b.sales)||0)-(parseInt(a.sales)||0))
-      .map(r => `
+      .map(r => {
+        const cpl = r.costPerLead !== "" && r.costPerLead != null ? parseFloat(r.costPerLead) : null;
+        const cplHtml = cpl !== null && !isNaN(cpl)
+          ? `<span class="${cpl>227?"bad":"good"}">${gbp(cpl)}/lead</span>`
+          : (r.spend ? `${gbp(r.spend)} spent, no sales` : "");
+        return `
         <div class="hist-row">
-          <span class="hist-source">${r.source||""}</span>
-          <span class="hist-stats">${r.sales||0} sale${r.sales!=1?"s":""} · ${gbp(r.totalValue||0)}</span>
-        </div>`).join("");
+          <div class="hist-top">
+            <span class="hist-source">${r.source||""}</span>
+            <span class="hist-stats">${r.sales||0} sale${r.sales!=1?"s":""} · ${gbp(r.totalValue||0)}</span>
+          </div>
+          <div class="hist-cpl">${cplHtml}</div>
+        </div>`;
+      }).join("");
+
     return `<div class="month-group">
       <div class="month-title">${m}</div>
       ${rowsHtml}
-      <div class="month-total">${totalSales} total sale${totalSales!==1?"s":""} · ${gbp(totalValue)}</div>
+      <div class="month-total">
+        ${totalSales} total sale${totalSales!==1?"s":""} · turnover ${gbp(totalValue)}<br>
+        ${blendedCpl!==null ? `blended cost per lead ${gbp(blendedCpl)}` : ""}
+      </div>
     </div>`;
   }).join("");
 }
 
-function saveSpend(){
+async function saveSpend(){
   document.querySelectorAll(".spend-input").forEach(inp => {
     spend[inp.dataset.src] = parseFloat(inp.value)||0;
   });
-  localStorage.setItem("ca-spend", JSON.stringify(spend));
-  renderSummary();
-  toast("Spend saved ✓");
+  try{
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ type: "spend", spend })
+    });
+    renderSummary();
+    toast("Spend saved ✓ — synced with the team");
+  }catch(e){
+    toast("Couldn't sync spend — check connection");
+  }
 }
 
 loadSales();
