@@ -23,8 +23,8 @@
   .tally-num{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:30px;display:block;line-height:1}
   .tally-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;opacity:.6}
 
-  nav{display:flex;background:#181B1F;padding:0 12px;gap:4px}
-  nav button{flex:1;background:transparent;color:rgba(255,255,255,.55);border:none;border-bottom:3px solid transparent;padding:12px 4px;font-size:14px;font-weight:700;cursor:pointer;transition:color .15s}
+  nav{display:flex;background:#181B1F;padding:0 12px;gap:4px;overflow-x:auto}
+  nav button{flex:1;min-width:80px;background:transparent;color:rgba(255,255,255,.55);border:none;border-bottom:3px solid transparent;padding:12px 4px;font-size:14px;font-weight:700;cursor:pointer;transition:color .15s;white-space:nowrap}
   nav button.active{color:#fff;border-bottom:3px solid #FFD307}
 
   #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#181B1F;color:#FFD307;padding:10px 18px;border-radius:6px;font-weight:700;font-size:14px;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.25);display:none}
@@ -69,6 +69,15 @@
   .refresh-btn{border:1.5px solid #C9CCC6;background:#FAFAF8;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px}
   .loading{text-align:center;padding:24px;color:#777;font-size:14px}
 
+  /* HISTORY */
+  .month-group{margin-bottom:22px}
+  .month-title{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;background:#181B1F;color:#FFD307;display:inline-block;padding:4px 10px;border-radius:4px;margin-bottom:10px}
+  .hist-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #EDEEEA;font-size:14px}
+  .hist-row:last-child{border-bottom:none}
+  .hist-source{font-weight:700}
+  .hist-stats{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4A4F56;text-align:right}
+  .month-total{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;text-align:right;margin-top:8px;padding-top:8px;border-top:1.5px solid #181B1F}
+
   footer{text-align:center;font-size:12px;color:#7A7F76;margin-top:18px;padding:0 20px}
 
   @media(max-width:480px){.form-grid{grid-template-columns:1fr}}
@@ -94,6 +103,7 @@
   <button class="active" onclick="showTab('log',this)">Log a sale</button>
   <button onclick="showTab('board',this)">Sales board</button>
   <button onclick="showTab('summary',this)">Cost per sale</button>
+  <button onclick="showTab('history',this)">History</button>
 </nav>
 
 <div id="toast"></div>
@@ -130,6 +140,13 @@
   <button class="log-btn" onclick="saveSpend()">Save spend figures</button>
 </div>
 
+<div id="tab-history" class="card" style="display:none">
+  <div class="card-title">Monthly history</div>
+  <p class="note">Archived automatically on the 1st of each month.</p>
+  <button class="refresh-btn" onclick="loadSales(true)">↻ Refresh</button>
+  <div id="history-list"><div class="loading">Loading…</div></div>
+</div>
+
 <footer>Shared board — everyone with the link logs to the same list, backed by Google Sheets.</footer>
 
 <script>
@@ -137,10 +154,11 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxtgcrFqOmNUMgLzwQiZAwWBFsjH5QGdfMEKZMoaumPjq9bQ-C88kvlcQ0FKGzRlOWQ/exec";
 // ▲▲▲ It looks like: https://script.google.com/macros/s/AKfycb.../exec ▲▲▲
 
-const SOURCES = ["Auto Trader","Other portal","Website direct","Walk-in","Repeat customer","Referral","Email campaign","SMS campaign","Social media","Phone-in","Other"];
-const DEFAULT_SPEND = {"Auto Trader":4000,"Other portal":800,"Website direct":300,"Social media":400,"Email campaign":50,"SMS campaign":50};
+const SOURCES = ["Auto Trader","Google Ads","Other portal","Website direct","Walk-in","Repeat customer","Referral","Email campaign","SMS campaign","Social media","Phone-in","Other"];
+const DEFAULT_SPEND = {"Auto Trader":4000,"Google Ads":0,"Other portal":800,"Website direct":300,"Social media":400,"Email campaign":50,"SMS campaign":50};
 
 let entries = [];
+let history = [];
 let spend = JSON.parse(localStorage.getItem("ca-spend") || "null") || { ...DEFAULT_SPEND };
 let selectedSource = "";
 
@@ -151,11 +169,12 @@ function toast(msg){
   clearTimeout(el._t); el._t = setTimeout(()=>el.style.display="none", 2500);
 }
 function showTab(name, btn){
-  ["log","board","summary"].forEach(t => document.getElementById("tab-"+t).style.display = t===name?"block":"none");
+  ["log","board","summary","history"].forEach(t => document.getElementById("tab-"+t).style.display = t===name?"block":"none");
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   if(name==="board") loadSales();
   if(name==="summary") renderSummary();
+  if(name==="history") loadSales().then(renderHistory);
 }
 
 document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
@@ -177,6 +196,7 @@ async function loadSales(showToast){
     const res = await fetch(API_URL);
     const data = await res.json();
     entries = data.entries || [];
+    history = data.history || [];
     document.getElementById("tally").textContent = entries.length;
     renderBoard();
     if(showToast) toast("Refreshed ✓");
@@ -253,6 +273,38 @@ function renderSummary(){
   const blended = total>0 ? totalSpend/total : null;
   document.getElementById("totals-line").textContent =
     `Total spend ${gbp(totalSpend)}/month` + (blended!==null?` · blended ${gbp(blended)}/sale`:"");
+}
+
+function renderHistory(){
+  const el = document.getElementById("history-list");
+  if(!history.length){ el.innerHTML = '<div class="empty">No archived months yet. History appears after your first monthly reset (1st of the month).</div>'; return; }
+
+  const byMonth = {};
+  history.forEach(h => {
+    const m = h.month || "Unknown";
+    if(!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(h);
+  });
+
+  const months = Object.keys(byMonth).sort().reverse();
+
+  el.innerHTML = months.map(m => {
+    const rows = byMonth[m];
+    const totalSales = rows.reduce((a,r)=>a+(parseInt(r.sales)||0),0);
+    const totalValue = rows.reduce((a,r)=>a+(parseFloat(r.totalValue)||0),0);
+    const rowsHtml = rows
+      .sort((a,b)=>(parseInt(b.sales)||0)-(parseInt(a.sales)||0))
+      .map(r => `
+        <div class="hist-row">
+          <span class="hist-source">${r.source||""}</span>
+          <span class="hist-stats">${r.sales||0} sale${r.sales!=1?"s":""} · ${gbp(r.totalValue||0)}</span>
+        </div>`).join("");
+    return `<div class="month-group">
+      <div class="month-title">${m}</div>
+      ${rowsHtml}
+      <div class="month-total">${totalSales} total sale${totalSales!==1?"s":""} · ${gbp(totalValue)}</div>
+    </div>`;
+  }).join("");
 }
 
 function saveSpend(){
